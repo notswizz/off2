@@ -407,6 +407,37 @@
   border-color: rgba(0, 212, 126, 0.1);
 }
 
+/* AI Message Styling */
+.aiMessage {
+  border-left: 2px solid #a855f7;
+  padding-left: 0.5rem;
+  margin-left: 0;
+}
+
+.aiBubble {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(59, 130, 246, 0.08));
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+.aiUser {
+  color: #a855f7 !important;
+  background: linear-gradient(90deg, #a855f7, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.aiText {
+  white-space: pre-line;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.aiMessage .msgSchool {
+  color: #a855f7;
+  opacity: 0.7;
+}
+
 /* Input Area */
 .inputArea {
   padding: 0.75rem;

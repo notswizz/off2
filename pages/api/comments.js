@@ -38,21 +38,23 @@ export default async function handler(req, res) {
 
     case 'POST': {
       // Add a new comment
-      const { playerId, playerName, userId, college, collegeLogo, message, parentId, replyToUser } = req.body;
+      const { playerId, playerName, userId, college, collegeLogo, message, parentId, replyToUser, isAiGenerated } = req.body;
 
       if (!playerId || !userId || !college || !message) {
         return res.status(400).json({ error: 'playerId, userId, college, and message required' });
       }
 
-      if (message.length > 500) {
-        return res.status(400).json({ error: 'Message too long (max 500 chars)' });
+      // AI messages can be longer
+      const maxLength = isAiGenerated ? 1000 : 500;
+      if (message.length > maxLength) {
+        return res.status(400).json({ error: `Message too long (max ${maxLength} chars)` });
       }
 
-      if (userId.length > 30) {
+      if (!isAiGenerated && userId.length > 30) {
         return res.status(400).json({ error: 'User ID too long (max 30 chars)' });
       }
 
-      if (college.length > 50) {
+      if (!isAiGenerated && college.length > 50) {
         return res.status(400).json({ error: 'College too long (max 50 chars)' });
       }
 
@@ -66,6 +68,7 @@ export default async function handler(req, res) {
           message: message.trim(),
           parentId: parentId || null,
           replyToUser: replyToUser || null,
+          isAiGenerated: isAiGenerated || false,
           upvotes: 0,
           downvotes: 0,
           createdAt: new Date()

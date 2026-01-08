@@ -15,20 +15,21 @@ function timeAgo(date) {
 
 function MessageItem({ msg, isSetup, onReply, onVote, isReply = false }) {
   const score = (msg.upvotes || 0) - (msg.downvotes || 0);
+  const isAi = msg.isAiGenerated;
   
   return (
-    <div className={`${styles.message} ${isReply ? styles.replyMessage : ''}`}>
-      <div className={styles.messageBubble}>
+    <div className={`${styles.message} ${isReply ? styles.replyMessage : ''} ${isAi ? styles.aiMessage : ''}`}>
+      <div className={`${styles.messageBubble} ${isAi ? styles.aiBubble : ''}`}>
         <div className={styles.messageHeader}>
           {msg.collegeLogo && <img src={msg.collegeLogo} alt="" className={styles.msgLogo} />}
-          <span className={styles.msgUser}>{msg.userId}</span>
+          <span className={`${styles.msgUser} ${isAi ? styles.aiUser : ''}`}>{msg.userId}</span>
           <span className={styles.msgSchool}>{msg.college}</span>
           <span className={styles.msgTime}>{timeAgo(msg.createdAt)}</span>
         </div>
         {msg.replyToUser && (
           <span className={styles.replyTag}>↳ @{msg.replyToUser}</span>
         )}
-        <p className={styles.msgText}>{msg.message}</p>
+        <p className={`${styles.msgText} ${isAi ? styles.aiText : ''}`}>{msg.message}</p>
         
         {/* Actions */}
         <div className={styles.msgActions}>
@@ -51,7 +52,7 @@ function MessageItem({ msg, isSetup, onReply, onVote, isReply = false }) {
               ▼
             </button>
           </div>
-          {isSetup && !isReply && (
+          {isSetup && !isReply && !isAi && (
             <button className={styles.replyBtn} onClick={() => onReply(msg)}>
               Reply
             </button>

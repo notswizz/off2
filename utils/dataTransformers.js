@@ -49,7 +49,6 @@ export function transformPortalPlayers(portalData) {
       // NIL valuation
       nilStatus: player.nilStatus || valuation.nilStatus,
       nilValuation: valuation.totalValue || valuation.valuation || null,
-      nilSource: valuation.totalValue ? 'valuation' : valuation.valuation ? 'nil' : null,
       valuation: valuation,
       
       // Player record status

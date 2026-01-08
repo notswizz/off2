@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import styles from "@/styles/Dashboard.module.css";
 
@@ -184,6 +185,9 @@ export default function Home() {
             </div>
 
             <div className={styles.headerControls}>
+              <Link href="/intel" className={styles.intelBtn} title="AI Intel Hub">
+                🧠
+              </Link>
               <button 
                 onClick={() => setFeedOpen(true)}
                 className={styles.notificationBtn}

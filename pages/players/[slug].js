@@ -15,6 +15,9 @@ export default function PlayerDetail() {
   const [portalData, setPortalData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
   const [votes, setVotes] = useState({ upvotes: 0, downvotes: 0, score: 0 });
   const [voting, setVoting] = useState(false);
@@ -50,7 +53,7 @@ export default function PlayerDetail() {
         const lastVote = localStorage.getItem(`vote_cooldown_${player.key}`);
         if (lastVote) {
           const elapsed = Date.now() - parseInt(lastVote, 10);
-          const remaining = Math.max(0, 15000 - elapsed); // 15 seconds cooldown
+          const remaining = Math.max(0, 15000 - elapsed);
           setVoteCooldown(Math.ceil(remaining / 1000));
         }
       } catch (err) {
@@ -94,7 +97,6 @@ export default function PlayerDetail() {
     fetchCommentCount();
     fetchVotes();
     
-    // Track player view
     if (player?.key && player?.name) {
       trackUserAction('view_player', 'player', player.key.toString(), player.name, {
         position: player.positionAbbreviation,
@@ -115,12 +117,8 @@ export default function PlayerDetail() {
       if (res.ok) {
         const data = await res.json();
         setVotes(data);
-        
-        // Set cooldown
         localStorage.setItem(`vote_cooldown_${player.key}`, Date.now().toString());
         setVoteCooldown(15);
-        
-        // Track the vote action
         trackUserAction(
           voteType === 'up' ? 'upvote' : 'downvote',
           'player',
@@ -136,12 +134,105 @@ export default function PlayerDetail() {
     }
   }
 
-  // Close modal on escape key
+  // Run AI Analysis and save to chat
+  async function runAiAnalysis() {
+    if (!player?.name) return;
+    setAiLoading(true);
+    setAiOpen(true);
+    setAiAnalysis(null);
+    
+    try {
+      const res = await fetch('/api/analyze-recruiting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          player: player.name,
+          playerInfo: {
+            position: player.positionAbbreviation,
+            currentSchool: player.lastTeam?.name
+          }
+        })
+      });
+      const data = await res.json();
+      setAiAnalysis(data);
+      
+      // Save AI analysis to chat for others to see
+      if (!data.error) {
+        await saveAiToChat(data);
+      }
+    } catch (err) {
+      console.error('AI analysis error:', err);
+      setAiAnalysis({ error: err.message });
+    } finally {
+      setAiLoading(false);
+    }
+  }
+  
+  // Save AI analysis as a chat message
+  async function saveAiToChat(analysis) {
+    if (!player?.key) return;
+    
+    // Format the AI analysis as a readable message
+    let message = `🧠 AI Intel Report\n`;
+    
+    if (analysis.summary) {
+      message += `\n${analysis.summary}`;
+    }
+    
+    if (analysis.predictions?.length > 0) {
+      message += `\n\n🎯 Predictions:`;
+      analysis.predictions.forEach(pred => {
+        message += `\n• ${pred.school}: ${pred.confidence}%`;
+        if (pred.reason || pred.reasoning) {
+          message += ` - ${(pred.reason || pred.reasoning).substring(0, 80)}`;
+        }
+      });
+    }
+    
+    if (analysis.visits?.length > 0) {
+      const visitNames = analysis.visits.map(v => v.name || v).join(', ');
+      message += `\n\n🏟️ Visits: ${visitNames}`;
+    }
+    
+    if (analysis.crystalBalls) {
+      message += `\n\n🔮 ${analysis.crystalBalls}`;
+    }
+    
+    if (analysis.timeline) {
+      message += `\n\n📅 ${analysis.timeline}`;
+    }
+    
+    try {
+      await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerId: player.key.toString(),
+          playerName: player.name,
+          userId: '🤖 AI Bot',
+          college: 'GPT-4.1 + Web Search',
+          collegeLogo: null,
+          message: message.trim().substring(0, 500),
+          isAiGenerated: true
+        })
+      });
+      
+      // Update comment count
+      setCommentCount(prev => prev + 1);
+    } catch (err) {
+      console.error('Error saving AI to chat:', err);
+    }
+  }
+
+  // Close modals on escape key
   useEffect(() => {
     function handleEscape(e) {
-      if (e.key === 'Escape') setChatOpen(false);
+      if (e.key === 'Escape') {
+        setChatOpen(false);
+        setAiOpen(false);
+      }
     }
-    if (chatOpen) {
+    if (chatOpen || aiOpen) {
       document.addEventListener('keydown', handleEscape);
       document.body.style.overflow = 'hidden';
     }
@@ -149,7 +240,7 @@ export default function PlayerDetail() {
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = '';
     };
-  }, [chatOpen]);
+  }, [chatOpen, aiOpen]);
 
   if (loading) {
     return (
@@ -179,6 +270,12 @@ export default function PlayerDetail() {
   const statusType = player.recStatus === "Enrolled" ? "enrolled" : org ? "committed" : "searching";
   const statusText = player.recStatus || (org ? "Committed" : "In Portal");
 
+  const getConfidenceColor = (conf) => {
+    if (conf >= 80) return '#22c55e';
+    if (conf >= 60) return '#eab308';
+    return '#f97316';
+  };
+
   return (
     <>
       <Head>
@@ -195,6 +292,13 @@ export default function PlayerDetail() {
             <img src="/off2.jpg" alt="Off2" className={`${styles.logoImg} ${styles.logoLight}`} />
           </Link>
           <div className={styles.headerActions}>
+            <button 
+              className={styles.aiButton}
+              onClick={runAiAnalysis}
+              aria-label="AI Analysis"
+            >
+              🧠
+            </button>
             <button 
               className={styles.chatButton}
               onClick={() => setChatOpen(true)}
@@ -213,7 +317,7 @@ export default function PlayerDetail() {
           </div>
         </header>
 
-        {/* Mobile Floating Vote Buttons - Top Left */}
+        {/* Mobile Floating Vote Buttons */}
         <div className={styles.floatingVoteWidget}>
           <button onClick={() => handleVote('up')} disabled={voting || voteCooldown > 0} className={styles.floatingVoteUp}>
             <span className={styles.floatingVoteIcon}>▲</span>
@@ -228,11 +332,20 @@ export default function PlayerDetail() {
           )}
         </div>
 
-        {/* Mobile Bottom Bar - Just Logo */}
+        {/* Mobile Bottom Bar */}
         <Link href="/" className={styles.mobileBottomBar}>
           <img src="/off21.jpg" alt="Off2" className={`${styles.mobileLogoImg} ${styles.logoDark}`} />
           <img src="/off2.jpg" alt="Off2" className={`${styles.mobileLogoImg} ${styles.logoLight}`} />
         </Link>
+
+        {/* Floating AI Button (Mobile) */}
+        <button 
+          className={styles.floatingAiBtn}
+          onClick={runAiAnalysis}
+          aria-label="AI Analysis"
+        >
+          🧠
+        </button>
 
         {/* Floating Chat Button */}
         <button 
@@ -251,7 +364,6 @@ export default function PlayerDetail() {
         <main className={styles.main}>
           {/* Player Card */}
           <div className={styles.playerCard}>
-
             {/* Top Section */}
             <div className={styles.cardTop}>
               <div className={styles.imageWrapper}>
@@ -386,7 +498,7 @@ export default function PlayerDetail() {
               )}
             </div>
 
-            {/* Predictions - only show if still in portal */}
+            {/* Predictions */}
             {!org && player.predictions && player.predictions.length > 0 && (
               <div className={styles.predictionsSection}>
                 <span className={styles.predictionsTitle}>Predictions</span>
@@ -444,18 +556,132 @@ export default function PlayerDetail() {
       {/* Chat Modal */}
       {chatOpen && (
         <div className={styles.modalOverlay} onClick={() => setChatOpen(false)}>
-          <div 
-            className={styles.modalContent} 
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button 
-              className={styles.modalClose}
-              onClick={() => setChatOpen(false)}
-              aria-label="Close"
-            >
-              ×
-            </button>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.modalClose} onClick={() => setChatOpen(false)}>×</button>
             <Comments playerId={player.key?.toString()} playerName={player.name} />
+          </div>
+        </div>
+      )}
+
+      {/* AI Analysis Modal */}
+      {aiOpen && (
+        <div className={styles.modalOverlay} onClick={() => setAiOpen(false)}>
+          <div className={styles.aiModalContent} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.modalClose} onClick={() => setAiOpen(false)}>×</button>
+            
+            <div className={styles.aiModalHeader}>
+              <h2>🧠 AI Intel: {player.name}</h2>
+              <span className={styles.aiPowered}>Powered by GPT-4.1 + Web Search</span>
+            </div>
+
+            {aiLoading && (
+              <div className={styles.aiLoading}>
+                <div className={styles.aiSpinner}></div>
+                <p>Searching the web for intel...</p>
+                <span>Checking On3, 247, ESPN, news sites...</span>
+              </div>
+            )}
+
+            {aiAnalysis && !aiLoading && (
+              <div className={styles.aiResults}>
+                {aiAnalysis.error ? (
+                  <div className={styles.aiError}>
+                    <p>Error: {aiAnalysis.error}</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Status + Summary */}
+                    <div className={styles.aiSection}>
+                      {aiAnalysis.status && (
+                        <span className={styles.aiStatusBadge}>{aiAnalysis.status}</span>
+                      )}
+                      {aiAnalysis.summary && (
+                        <p className={styles.aiSummary}>{aiAnalysis.summary}</p>
+                      )}
+                      {aiAnalysis.timeline && (
+                        <p className={styles.aiTimeline}>📅 {aiAnalysis.timeline}</p>
+                      )}
+                    </div>
+
+                    {/* Predictions - no logos */}
+                    {aiAnalysis.predictions?.length > 0 && (
+                      <div className={styles.aiSection}>
+                        <h3>🎯 Predictions</h3>
+                        <div className={styles.aiPredictions}>
+                          {aiAnalysis.predictions.map((pred, i) => (
+                            <div key={i} className={styles.aiPredItem}>
+                              <div className={styles.aiPredHeader}>
+                                <span className={styles.aiPredSchool}>{pred.school}</span>
+                                <span 
+                                  className={styles.aiPredConf}
+                                  style={{ background: getConfidenceColor(pred.confidence) }}
+                                >
+                                  {pred.confidence}%
+                                </span>
+                              </div>
+                              {(pred.reason || pred.reasoning) && (
+                                <p className={styles.aiPredReason}>{pred.reason || pred.reasoning}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Crystal Balls */}
+                    {aiAnalysis.crystalBalls && (
+                      <div className={styles.aiSection}>
+                        <h3>🔮 Crystal Balls</h3>
+                        <p>{aiAnalysis.crystalBalls}</p>
+                      </div>
+                    )}
+
+                    {/* Visits - no logos */}
+                    {aiAnalysis.visits?.length > 0 && (
+                      <div className={styles.aiSection}>
+                        <h3>🏟️ Visits</h3>
+                        <div className={styles.aiVisits}>
+                          {aiAnalysis.visits.map((visit, i) => (
+                            <div key={i} className={styles.aiVisitChip}>
+                              <span>{visit.name || visit}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sources */}
+                    {(aiAnalysis.sources?.length > 0 || aiAnalysis.webSearchSources?.length > 0) && (
+                      <div className={styles.aiSection}>
+                        <h3>📰 Sources</h3>
+                        <div className={styles.aiSourceTags}>
+                          {aiAnalysis.sources?.map((source, i) => (
+                            <span key={i} className={styles.aiSourceTag}>{source}</span>
+                          ))}
+                          {aiAnalysis.webSearchSources?.slice(0, 4).map((source, i) => (
+                            <a 
+                              key={`ws-${i}`} 
+                              href={source.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className={styles.aiSourceLink}
+                            >
+                              {new URL(source.url).hostname.replace('www.', '')}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Meta */}
+                    <div className={styles.aiMeta}>
+                      <span>🤖 {aiAnalysis.model}</span>
+                      {aiAnalysis.webSearchEnabled && <span>🌐 Live</span>}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
