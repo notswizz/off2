@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import styles from '@/styles/Comments.module.css';
+import { trackUserAction } from '@/hooks/useActionTracker';
 
 function timeAgo(date) {
   const seconds = Math.floor((new Date() - new Date(date)) / 1000);
@@ -273,6 +274,16 @@ export default function Comments({ playerId, playerName }) {
             ? { ...c, upvotes: data.upvotes, downvotes: data.downvotes }
             : c
         ));
+        
+        // Track the vote action
+        const comment = comments.find(c => c.id === commentId);
+        trackUserAction(
+          voteType === 'up' ? 'upvote' : 'downvote',
+          'comment',
+          commentId,
+          comment?.userId || 'unknown',
+          { playerId, playerName, commentMessage: comment?.message?.substring(0, 50) }
+        );
       }
     } catch (err) {
       console.error('Error voting:', err);
@@ -303,6 +314,20 @@ export default function Comments({ playerId, playerName }) {
       if (res.ok) {
         const newComment = await res.json();
         setComments([...comments, newComment]);
+        
+        // Track the comment/reply action
+        trackUserAction(
+          replyingTo ? 'reply' : 'comment',
+          'player',
+          playerId,
+          playerName,
+          { 
+            commentId: newComment.id, 
+            message: message.trim().substring(0, 100),
+            replyTo: replyingTo?.userId || null
+          }
+        );
+        
         setMessage('');
         setReplyingTo(null);
       }

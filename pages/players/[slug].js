@@ -6,6 +6,7 @@ import styles from "@/styles/PlayerDetail.module.css";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import ThemeToggle from "@/components/ThemeToggle";
 import Comments from "@/components/Comments";
+import { trackUserAction } from "@/hooks/useActionTracker";
 
 export default function PlayerDetail() {
   const router = useRouter();
@@ -69,7 +70,15 @@ export default function PlayerDetail() {
     
     fetchCommentCount();
     fetchVotes();
-  }, [player?.key]);
+    
+    // Track player view
+    if (player?.key && player?.name) {
+      trackUserAction('view_player', 'player', player.key.toString(), player.name, {
+        position: player.positionAbbreviation,
+        slug: player.slug
+      });
+    }
+  }, [player?.key, player?.name, player?.positionAbbreviation, player?.slug]);
 
   async function handleVote(voteType) {
     if (!player?.key || voting) return;
@@ -83,6 +92,15 @@ export default function PlayerDetail() {
       if (res.ok) {
         const data = await res.json();
         setVotes(data);
+        
+        // Track the vote action
+        trackUserAction(
+          voteType === 'up' ? 'upvote' : 'downvote',
+          'player',
+          player.key.toString(),
+          player.name,
+          { source: 'player_detail' }
+        );
       }
     } catch (err) {
       console.error("Error voting:", err);
@@ -144,10 +162,10 @@ export default function PlayerDetail() {
       <div className={styles.container}>
         <header className={styles.header}>
           <Link href="/" className={styles.backLink}>← Back</Link>
-          <div className={styles.logo}>
-            <span className={styles.logoOn3}>Off</span>
-            <span className={styles.logoNil}>2</span>
-          </div>
+          <Link href="/" className={styles.logoLink}>
+            <img src="/off21.jpg" alt="Off2" className={`${styles.logoImg} ${styles.logoDark}`} />
+            <img src="/off2.jpg" alt="Off2" className={`${styles.logoImg} ${styles.logoLight}`} />
+          </Link>
           <div className={styles.headerActions}>
             <button 
               className={styles.chatButton}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styles from '@/styles/NewsFeed.module.css';
+import { trackUserAction } from '@/hooks/useActionTracker';
 
 function formatTimeAgo(timestamp) {
   const now = new Date();
@@ -31,7 +32,7 @@ function EventCard({ event, onVote, votes, players }) {
   const handleVote = async (e, voteType) => {
     e.preventDefault();
     e.stopPropagation();
-    onVote(event.playerId, voteType);
+    onVote(event.playerId, voteType, event.playerName);
   };
 
   const handleClick = () => {
@@ -60,12 +61,14 @@ function EventCard({ event, onVote, votes, players }) {
         )}
       </div>
 
-      {/* New School Logo (huge) */}
+      {/* Logo/Icon Column */}
       <div className={styles.logoCol}>
-        {event.toSchool && event.toSchoolLogo ? (
+        {event.type === 'ranking_change' ? (
+          <div className={styles.rankIcon}>📊</div>
+        ) : event.toSchool && event.toSchoolLogo ? (
           <img src={event.toSchoolLogo} alt="" className={styles.bigLogo} />
         ) : (
-          <div className={styles.portalIcon}>🔄</div>
+          <div className={styles.portalIcon}>🚪</div>
         )}
       </div>
 
@@ -83,11 +86,15 @@ function EventCard({ event, onVote, votes, players }) {
           </div>
         </div>
 
-        {/* New School Name (big) or subtle "In Portal" */}
-        {event.toSchool ? (
+        {/* Content based on event type */}
+        {event.type === 'ranking_change' ? (
+          <div className={styles.rankChange}>
+            #{event.oldRank} → <span className={event.newRank < event.oldRank ? styles.rankUp : styles.rankDown}>#{event.newRank}</span>
+          </div>
+        ) : event.toSchool ? (
           <div className={styles.toSchool}>{event.toSchool}</div>
         ) : (
-          <div className={styles.inPortal}>In Portal</div>
+          <div className={styles.inPortal}>Entered Portal</div>
         )}
 
         {/* Votes + Emoji */}
@@ -119,6 +126,7 @@ export default function NewsFeed({ isOpen, onClose }) {
   const [players, setPlayers] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('all'); // 'all', 'portal_entry', 'commitment'
 
   useEffect(() => {
     if (isOpen) {
@@ -181,7 +189,7 @@ export default function NewsFeed({ isOpen, onClose }) {
     }
   };
 
-  const handleVote = async (playerId, voteType) => {
+  const handleVote = async (playerId, voteType, playerName) => {
     try {
       const res = await fetch('/api/votes', {
         method: 'POST',
@@ -194,6 +202,15 @@ export default function NewsFeed({ isOpen, onClose }) {
           ...prev,
           [playerId]: data
         }));
+        
+        // Track the vote action
+        trackUserAction(
+          voteType === 'up' ? 'upvote' : 'downvote',
+          'player',
+          String(playerId),
+          playerName,
+          { source: 'activity_feed' }
+        );
       }
     } catch (err) {
       console.error('Vote error:', err);
@@ -202,12 +219,44 @@ export default function NewsFeed({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
+  const filteredEvents = filter === 'all' 
+    ? events 
+    : events.filter(e => e.type === filter);
+
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <h2 className={styles.title}>Activity</h2>
           <button className={styles.closeBtn} onClick={onClose}>×</button>
+        </div>
+
+        {/* Filters */}
+        <div className={styles.filters}>
+          <button 
+            className={`${styles.filterBtn} ${filter === 'all' ? styles.active : ''}`}
+            onClick={() => setFilter('all')}
+          >
+            All
+          </button>
+          <button 
+            className={`${styles.filterBtn} ${filter === 'portal_entry' ? styles.active : ''}`}
+            onClick={() => setFilter('portal_entry')}
+          >
+            🚪 Enters
+          </button>
+          <button 
+            className={`${styles.filterBtn} ${filter === 'commitment' ? styles.active : ''}`}
+            onClick={() => setFilter('commitment')}
+          >
+            ✍️ Commits
+          </button>
+          <button 
+            className={`${styles.filterBtn} ${filter === 'ranking_change' ? styles.active : ''}`}
+            onClick={() => setFilter('ranking_change')}
+          >
+            📊 Rankings
+          </button>
         </div>
 
         <div className={styles.content}>
@@ -220,14 +269,14 @@ export default function NewsFeed({ isOpen, onClose }) {
               <span>⚠️</span>
               <p>{error}</p>
             </div>
-          ) : events.length === 0 ? (
+          ) : filteredEvents.length === 0 ? (
             <div className={styles.empty}>
               <span>📭</span>
               <p>No activity yet</p>
             </div>
           ) : (
             <div className={styles.eventsList}>
-              {events.map((event) => (
+              {filteredEvents.map((event) => (
                 <EventCard 
                   key={event.id} 
                   event={event} 

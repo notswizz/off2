@@ -32,6 +32,40 @@
   to { transform: translateX(0); }
 }
 
+/* Ticker */
+.ticker {
+  background: var(--accent);
+  overflow: hidden;
+}
+
+.tickerTrack {
+  display: flex;
+  width: 100%;
+}
+
+.tickerContent {
+  display: flex;
+  animation: scroll 25s linear infinite;
+  white-space: nowrap;
+}
+
+.tickerItem {
+  padding: 0.5rem 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--bg-primary);
+  flex-shrink: 0;
+}
+
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker:hover .tickerContent {
+  animation-play-state: paused;
+}
+
 /* Header */
 .header {
   display: flex;
@@ -47,10 +81,13 @@
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .title::before {
-  content: '🔔 ';
+  content: '🔔';
 }
 
 .closeBtn {
@@ -71,6 +108,37 @@
 .closeBtn:hover {
   border-color: var(--accent);
   color: var(--text-primary);
+}
+
+/* Filters */
+.filters {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.filterBtn {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filterBtn:hover {
+  border-color: var(--text-muted);
+  color: var(--text-secondary);
+}
+
+.filterBtn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-primary);
 }
 
 /* Content (panel content, not card content) */
@@ -209,7 +277,10 @@
 
 .portalIcon {
   font-size: 2rem;
-  opacity: 0.6;
+}
+
+.rankIcon {
+  font-size: 2rem;
 }
 
 /* Info Column */
@@ -287,10 +358,24 @@
 
 /* In Portal (subtle) */
 .inPortal {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--text-muted);
-  font-style: italic;
-  opacity: 0.6;
+}
+
+/* Ranking Change */
+.rankChange {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.rankUp {
+  color: var(--accent);
+}
+
+.rankDown {
+  color: #ef4444;
 }
 
 /* Vote Row */

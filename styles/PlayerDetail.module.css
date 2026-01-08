@@ -71,14 +71,36 @@
   color: var(--accent);
 }
 
-.logo {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.25rem;
-  font-weight: 700;
+.logoLink {
+  display: flex;
+  align-items: center;
 }
 
-.logoOn3 { color: var(--text-primary); }
-.logoNil { color: var(--accent); }
+.logoImg {
+  display: none;
+  height: 36px;
+  width: auto;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+/* Dark mode: show white bg logo */
+.logoDark {
+  display: block;
+}
+
+.logoLight {
+  display: none;
+}
+
+/* Light mode: show dark bg logo */
+:global([data-theme="light"]) .logoDark {
+  display: none;
+}
+
+:global([data-theme="light"]) .logoLight {
+  display: block;
+}
 
 /* Main */
 .main {

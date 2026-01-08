@@ -8,6 +8,52 @@
   flex-direction: column;
 }
 
+/* Ticker */
+.ticker {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  overflow: hidden;
+  margin: 0 1rem;
+  height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+.tickerContent {
+  display: flex;
+  animation: tickerScroll 25s linear infinite;
+  white-space: nowrap;
+}
+
+.tickerItem {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.tickerLogo {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  border-radius: 2px;
+}
+
+@keyframes tickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker:hover .tickerContent {
+  animation-play-state: paused;
+}
+
 /* Loading */
 .loadingContainer {
   min-height: 100vh;
@@ -43,7 +89,7 @@
   flex: 1;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem 2rem 4rem;
+  padding: 1rem 2rem 4rem;
   width: 100%;
 }
 
@@ -51,7 +97,70 @@
    HEADER SECTION
    ============================================= */
 .header {
-  margin-bottom: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.logoWrapper {
+  position: relative;
+  padding: 2px;
+  background: linear-gradient(135deg, var(--accent), #00ff88, var(--accent), #00a86b);
+  background-size: 300% 300%;
+  animation: borderGlow 4s ease infinite;
+  border-radius: 8px;
+}
+
+@keyframes borderGlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.logoWrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--accent), #00ff88, var(--accent));
+  background-size: 300% 300%;
+  animation: borderGlow 4s ease infinite;
+  border-radius: 8px;
+  filter: blur(6px);
+  opacity: 0.4;
+  z-index: -1;
+}
+
+.logo {
+  display: none;
+  height: 40px;
+  width: auto;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+/* Dark mode: show white bg logo */
+.logoDark {
+  display: block;
+}
+
+.logoLight {
+  display: none;
+}
+
+/* Light mode: show dark bg logo */
+:global([data-theme="light"]) .logoDark {
+  display: none;
+}
+
+:global([data-theme="light"]) .logoLight {
+  display: block;
+}
+
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .headerTop {

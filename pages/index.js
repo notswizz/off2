@@ -23,6 +23,7 @@ export default function Home() {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState("2026");
+  const [tickerEvents, setTickerEvents] = useState([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -41,6 +42,22 @@ export default function Home() {
     }
     fetchData();
   }, [selectedYear]);
+
+  // Fetch events for ticker
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const res = await fetch('/api/events?limit=15');
+        if (res.ok) {
+          const data = await res.json();
+          setTickerEvents(data.events || []);
+        }
+      } catch (err) {
+        console.error("Error fetching events:", err);
+      }
+    }
+    fetchEvents();
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [positionFilter, setPositionFilter] = useState("all");
@@ -110,26 +127,61 @@ export default function Home() {
         <main className={styles.main}>
           {/* Header */}
           <header className={styles.header}>
-            <div className={styles.headerTop}>
-              <div className={styles.titleGroup}>
-                <span className={styles.badge}>Transfer Portal</span>
-                <h1 className={styles.title}>
-                  Off<span className={styles.titleAccent}>2</span>
-                </h1>
+            <div className={styles.logoWrapper}>
+              <img src="/off21.jpg" alt="Off2" className={`${styles.logo} ${styles.logoDark}`} />
+              <img src="/off2.jpg" alt="Off2" className={`${styles.logo} ${styles.logoLight}`} />
+            </div>
+
+            {/* Ticker */}
+            <div className={styles.ticker}>
+              <div className={styles.tickerContent}>
+                {tickerEvents.length > 0 ? (
+                  <>
+                    {tickerEvents.map((e, i) => (
+                      <span key={i} className={styles.tickerItem}>
+                        {e.type === 'commitment' && (
+                          <>
+                            {e.toSchoolLogo && <img src={e.toSchoolLogo} alt="" className={styles.tickerLogo} />}
+                            {e.playerName} → {e.toSchool}
+                          </>
+                        )}
+                        {e.type === 'portal_entry' && `🚪 ${e.playerName} entered portal`}
+                        {e.type === 'nil_change' && `💰 ${e.playerName} NIL updated`}
+                        {e.type === 'ranking_change' && `📊 ${e.playerName} #${e.newRank}`}
+                      </span>
+                    ))}
+                    {tickerEvents.map((e, i) => (
+                      <span key={`dup-${i}`} className={styles.tickerItem}>
+                        {e.type === 'commitment' && (
+                          <>
+                            {e.toSchoolLogo && <img src={e.toSchoolLogo} alt="" className={styles.tickerLogo} />}
+                            {e.playerName} → {e.toSchool}
+                          </>
+                        )}
+                        {e.type === 'portal_entry' && `🚪 ${e.playerName} entered portal`}
+                        {e.type === 'nil_change' && `💰 ${e.playerName} NIL updated`}
+                        {e.type === 'ranking_change' && `📊 ${e.playerName} #${e.newRank}`}
+                      </span>
+                    ))}
+                  </>
+                ) : (
+                  <span className={styles.tickerItem}>🏈 Transfer Portal Rankings</span>
+                )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <button 
-                  onClick={() => setFeedOpen(true)}
-                  className={styles.notificationBtn}
-                  aria-label="Open activity feed"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                  </svg>
-                </button>
-                <ThemeToggle />
-              </div>
+            </div>
+
+            <div className={styles.headerControls}>
+              <button 
+                onClick={() => setFeedOpen(true)}
+                className={styles.notificationBtn}
+                aria-label="Open activity feed"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+              </button>
+              <ThemeToggle />
             </div>
           </header>
 
