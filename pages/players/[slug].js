@@ -18,6 +18,7 @@ export default function PlayerDetail() {
   const [commentCount, setCommentCount] = useState(0);
   const [votes, setVotes] = useState({ upvotes: 0, downvotes: 0, score: 0 });
   const [voting, setVoting] = useState(false);
+  const [voteCooldown, setVoteCooldown] = useState(0);
 
   useEffect(() => {
     async function fetchData() {
@@ -39,6 +40,28 @@ export default function PlayerDetail() {
     if (!portalData?.pageProps?.players || !slug) return null;
     return portalData.pageProps.players.find((p) => p.slug === slug) || null;
   }, [portalData, slug]);
+
+  // Check vote cooldown on mount and update timer
+  useEffect(() => {
+    if (!player?.key) return;
+    
+    const checkCooldown = () => {
+      try {
+        const lastVote = localStorage.getItem(`vote_cooldown_${player.key}`);
+        if (lastVote) {
+          const elapsed = Date.now() - parseInt(lastVote, 10);
+          const remaining = Math.max(0, 15000 - elapsed); // 15 seconds cooldown
+          setVoteCooldown(Math.ceil(remaining / 1000));
+        }
+      } catch (err) {
+        console.error('Error checking cooldown:', err);
+      }
+    };
+    
+    checkCooldown();
+    const interval = setInterval(checkCooldown, 1000);
+    return () => clearInterval(interval);
+  }, [player?.key]);
 
   // Fetch comment count and votes
   useEffect(() => {
@@ -81,7 +104,7 @@ export default function PlayerDetail() {
   }, [player?.key, player?.name, player?.positionAbbreviation, player?.slug]);
 
   async function handleVote(voteType) {
-    if (!player?.key || voting) return;
+    if (!player?.key || voting || voteCooldown > 0) return;
     setVoting(true);
     try {
       const res = await fetch('/api/votes', {
@@ -92,6 +115,10 @@ export default function PlayerDetail() {
       if (res.ok) {
         const data = await res.json();
         setVotes(data);
+        
+        // Set cooldown
+        localStorage.setItem(`vote_cooldown_${player.key}`, Date.now().toString());
+        setVoteCooldown(15);
         
         // Track the vote action
         trackUserAction(
@@ -160,6 +187,7 @@ export default function PlayerDetail() {
       </Head>
 
       <div className={styles.container}>
+        {/* Desktop Header */}
         <header className={styles.header}>
           <Link href="/" className={styles.backLink}>← Back</Link>
           <Link href="/" className={styles.logoLink}>
@@ -179,9 +207,46 @@ export default function PlayerDetail() {
                 <span className={styles.chatBadge}>{commentCount}</span>
               )}
             </button>
-            <ThemeToggle />
+            <div className={styles.themeToggleWrap}>
+              <ThemeToggle />
+            </div>
           </div>
         </header>
+
+        {/* Mobile Floating Vote Buttons - Top Left */}
+        <div className={styles.floatingVoteWidget}>
+          <button onClick={() => handleVote('up')} disabled={voting || voteCooldown > 0} className={styles.floatingVoteUp}>
+            <span className={styles.floatingVoteIcon}>▲</span>
+            <span className={styles.floatingVoteCount}>{votes.upvotes}</span>
+          </button>
+          <button onClick={() => handleVote('down')} disabled={voting || voteCooldown > 0} className={styles.floatingVoteDown}>
+            <span className={styles.floatingVoteIcon}>▼</span>
+            <span className={styles.floatingVoteCount}>{votes.downvotes}</span>
+          </button>
+          {voteCooldown > 0 && (
+            <span className={styles.floatingCooldown}>{voteCooldown}s</span>
+          )}
+        </div>
+
+        {/* Mobile Bottom Bar - Just Logo */}
+        <Link href="/" className={styles.mobileBottomBar}>
+          <img src="/off21.jpg" alt="Off2" className={`${styles.mobileLogoImg} ${styles.logoDark}`} />
+          <img src="/off2.jpg" alt="Off2" className={`${styles.mobileLogoImg} ${styles.logoLight}`} />
+        </Link>
+
+        {/* Floating Chat Button */}
+        <button 
+          className={styles.floatingChatBtn}
+          onClick={() => setChatOpen(true)}
+          aria-label="Open chat"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          {commentCount > 0 && (
+            <span className={styles.floatingChatBadge}>{commentCount}</span>
+          )}
+        </button>
 
         <main className={styles.main}>
           {/* Player Card */}
@@ -243,16 +308,21 @@ export default function PlayerDetail() {
                     <span className={styles.portalChip}>In Portal</span>
                   )}
                 </div>
+              </div>
 
-                {/* Subtle Voting */}
-                <div className={styles.voteWidget}>
-                  <button onClick={() => handleVote('up')} disabled={voting} className={styles.voteUp}>
-                    ▲ {votes.upvotes}
-                  </button>
-                  <button onClick={() => handleVote('down')} disabled={voting} className={styles.voteDown}>
-                    ▼ {votes.downvotes}
-                  </button>
-                </div>
+              {/* Desktop Vote Widget */}
+              <div className={styles.desktopVoteWidget}>
+                <button onClick={() => handleVote('up')} disabled={voting || voteCooldown > 0} className={styles.desktopVoteUp}>
+                  <span>▲</span>
+                  <span>{votes.upvotes}</span>
+                </button>
+                <button onClick={() => handleVote('down')} disabled={voting || voteCooldown > 0} className={styles.desktopVoteDown}>
+                  <span>▼</span>
+                  <span>{votes.downvotes}</span>
+                </button>
+                {voteCooldown > 0 && (
+                  <span className={styles.cooldownTimer}>{voteCooldown}s</span>
+                )}
               </div>
             </div>
 

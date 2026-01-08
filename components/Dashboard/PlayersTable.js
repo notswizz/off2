@@ -22,6 +22,7 @@ export default function PlayersTable({ players, sortBy, sortOrder, onSort }) {
 
   return (
     <section className={styles.tableSection}>
+      {/* Desktop Table */}
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
           <thead>
@@ -125,6 +126,111 @@ export default function PlayersTable({ players, sortBy, sortOrder, onSort }) {
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className={styles.mobileCards}>
+        {players.map((player, index) => {
+          const displayRank = player.portalRank || (player.index != null ? player.index + 1 : index + 1);
+          const nilVal = player.nilValuation;
+          const isCommitted = !!player.toSchool;
+          
+          return (
+            <Link 
+              href={`/players/${player.slug}`} 
+              key={`mobile-${player.key}-${index}`}
+              className={`${styles.mobileCard} ${isCommitted ? styles.committed : ''}`}
+            >
+              {/* Animated border overlay for committed */}
+              {isCommitted && <div className={styles.cardGlow} />}
+              
+              {/* Floating Rank Badge - Top Left */}
+              <span className={`${styles.cardRankFloat} ${getRankClass(displayRank)}`}>
+                {displayRank}
+              </span>
+              
+              <div className={styles.cardInner}>
+                {/* Top Row: Image + Info */}
+                <div className={styles.cardTopRow}>
+                  <div className={styles.cardThumb}>
+                    {player.imageUrl ? (
+                      <img src={player.imageUrl} alt={player.name} className={styles.cardImage} />
+                    ) : (
+                      <div className={styles.cardImagePlaceholder}>
+                        {player.name?.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className={styles.cardMain}>
+                    <div className={styles.cardHeader}>
+                      {player.position && (
+                        <span className={styles.cardPos}>{player.position}</span>
+                      )}
+                    </div>
+                    
+                    <h3 className={styles.cardName}>{player.name}</h3>
+                    
+                    {player.stars > 0 && (
+                      <div className={styles.cardStars}>
+                        {"★".repeat(player.stars)}
+                        <span className={styles.starsLabel}>{player.stars}-Star</span>
+                      </div>
+                    )}
+                    
+                    {player.rating > 0 && (
+                      <div className={styles.cardRatingRow}>
+                        <span className={styles.cardRatingValue}>{player.rating.toFixed(2)}</span>
+                        <span className={styles.cardRatingLabel}>Rating</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Transfer Section */}
+                <div className={styles.cardTransferSection}>
+                  <div className={styles.cardFromTo}>
+                    <div className={styles.cardSchoolFrom}>
+                      {player.fromSchoolLogo && (
+                        <img src={player.fromSchoolLogo} alt="" className={styles.cardSchoolLogo} />
+                      )}
+                      <span>{player.fromSchool || 'Unknown'}</span>
+                    </div>
+                    <div className={styles.cardTransferArrow}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                      </svg>
+                    </div>
+                    <div className={`${styles.cardSchoolTo} ${isCommitted ? styles.isCommitted : ''}`}>
+                      {player.toSchoolLogo && (
+                        <img src={player.toSchoolLogo} alt="" className={styles.cardSchoolLogo} />
+                      )}
+                      <span>{player.toSchool || 'In Portal'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer: NIL & Status */}
+                <div className={styles.cardFooter}>
+                  {nilVal ? (
+                    <span className={styles.cardNil}>{formatCurrency(nilVal)}</span>
+                  ) : (
+                    <span className={styles.cardNilPrivate}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                      Private
+                    </span>
+                  )}
+                  <span className={`${styles.cardStatus} ${isCommitted ? styles.statusCommitted : styles.statusPortal}`}>
+                    {isCommitted ? '✓ Committed' : '◎ In Portal'}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );

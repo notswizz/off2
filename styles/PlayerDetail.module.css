@@ -60,6 +60,10 @@
   gap: 0.75rem;
 }
 
+.themeToggleWrap {
+  display: flex;
+}
+
 .backLink {
   color: var(--text-secondary);
   font-size: 0.875rem;
@@ -102,6 +106,196 @@
   display: block;
 }
 
+/* Mobile Bottom Bar & Floating Elements */
+.mobileBottomBar {
+  display: none;
+}
+
+.floatingChatBtn {
+  display: none;
+}
+
+.floatingVoteWidget {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .header {
+    display: none;
+  }
+  
+  .container {
+    padding-bottom: 70px;
+  }
+  
+  /* Logo Bottom Bar */
+  .mobileBottomBar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0.75rem 1rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+  
+  .mobileBottomBar:active {
+    background: var(--bg-secondary);
+  }
+  
+  .mobileLogoImg {
+    display: none;
+    height: 36px;
+    width: auto;
+    border-radius: 6px;
+    object-fit: contain;
+  }
+  
+  .mobileLogoImg.logoDark {
+    display: block;
+  }
+  
+  .mobileLogoImg.logoLight {
+    display: none;
+  }
+  
+  :global([data-theme="light"]) .mobileLogoImg.logoDark {
+    display: none;
+  }
+  
+  :global([data-theme="light"]) .mobileLogoImg.logoLight {
+    display: block;
+  }
+  
+  /* Floating Chat Button */
+  .floatingChatBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    right: 1rem;
+    width: 56px;
+    height: 56px;
+    background: var(--accent);
+    border: none;
+    border-radius: 50%;
+    color: var(--bg-primary);
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 212, 126, 0.4);
+    z-index: 101;
+    transition: all 0.2s ease;
+  }
+  
+  .floatingChatBtn:active {
+    transform: scale(0.9);
+  }
+  
+  .floatingChatBadge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ef4444;
+    border: 2px solid var(--bg-card);
+    border-radius: 100px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #fff;
+  }
+  
+  .main {
+    padding: 1rem;
+    padding-top: 4rem; /* Space for floating vote widget */
+  }
+  
+  .themeToggleWrap {
+    display: none;
+  }
+  
+  /* Hide desktop vote widget on mobile */
+  .desktopVoteWidget {
+    display: none;
+  }
+  
+  /* Floating Vote Widget - Top Left (Vertical Stack) */
+  .floatingVoteWidget {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    position: fixed;
+    top: 3.5rem;
+    left: 2.3rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.375rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 101;
+  }
+  
+  .floatingVoteUp,
+  .floatingVoteDown {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.625rem;
+    background: var(--bg-secondary);
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  
+  .floatingVoteIcon {
+    font-size: 0.75rem;
+  }
+  
+  .floatingVoteCount {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 0.75rem;
+  }
+  
+  .floatingVoteUp {
+    color: var(--accent);
+  }
+  
+  .floatingVoteUp:active {
+    background: rgba(0, 212, 126, 0.3);
+    transform: scale(0.95);
+  }
+  
+  .floatingVoteDown {
+    color: #ef4444;
+  }
+  
+  .floatingVoteDown:active {
+    background: rgba(239, 68, 68, 0.3);
+    transform: scale(0.95);
+  }
+  
+  .floatingCooldown {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 0.25rem;
+  }
+}
+
 /* Main */
 .main {
   max-width: 600px;
@@ -116,46 +310,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-}
-
-/* Vote Widget - Subtle */
-.voteWidget {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-
-.voteUp,
-.voteDown {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text-muted);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.voteUp:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.voteDown:hover:not(:disabled) {
-  border-color: #ef4444;
-  color: #ef4444;
-}
-
-.voteUp:disabled,
-.voteDown:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* Chat Button */
@@ -202,9 +356,67 @@
 /* Card Top */
 .cardTop {
   display: flex;
+  align-items: flex-start;
   gap: 1.25rem;
   padding: 1.5rem;
   background: linear-gradient(135deg, rgba(0, 212, 126, 0.08) 0%, transparent 60%);
+}
+
+/* Desktop Vote Widget */
+.desktopVoteWidget {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.desktopVoteUp,
+.desktopVoteDown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.desktopVoteUp {
+  color: var(--accent);
+}
+
+.desktopVoteUp:hover:not(:disabled) {
+  background: rgba(0, 212, 126, 0.15);
+  border-color: var(--accent);
+}
+
+.desktopVoteDown {
+  color: #ef4444;
+}
+
+.desktopVoteDown:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+}
+
+.desktopVoteUp:disabled,
+.desktopVoteDown:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cooldownTimer {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0.25rem;
 }
 
 .imageWrapper {
