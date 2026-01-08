@@ -58,6 +58,11 @@ export default async function handler(req, res) {
         lastUpdated: now,
       };
 
+      // Get player's vote score
+      const voteDoc = await db.collection('votes').doc(String(player.key)).get();
+      const voteData = voteDoc.exists ? voteDoc.data() : { upvotes: 0, downvotes: 0 };
+      const voteScore = (voteData.upvotes || 0) - (voteData.downvotes || 0);
+
       if (!existingData) {
         // New player entered the portal!
         const eventRef = eventsRef.doc();
@@ -68,8 +73,12 @@ export default async function handler(req, res) {
           playerSlug: player.slug,
           playerImage: player.defaultAssetUrl,
           position: player.positionAbbreviation,
+          stars: currentState.stars,
+          rating: currentState.rating,
           fromSchool: currentState.fromSchool,
           fromSchoolLogo: currentState.fromSchoolLogo,
+          nilValue: currentState.nilValue,
+          voteScore: voteScore,
           description: `${player.name} has entered the transfer portal`,
           timestamp: now,
           read: false,
@@ -86,9 +95,14 @@ export default async function handler(req, res) {
             playerSlug: player.slug,
             playerImage: player.defaultAssetUrl,
             position: player.positionAbbreviation,
+            stars: currentState.stars,
+            rating: currentState.rating,
             fromSchool: currentState.fromSchool,
+            fromSchoolLogo: currentState.fromSchoolLogo,
             toSchool: currentState.toSchool,
             toSchoolLogo: currentState.toSchoolLogo,
+            nilValue: currentState.nilValue,
+            voteScore: voteScore,
             description: `${player.name} has committed to ${currentState.toSchool}`,
             timestamp: now,
             read: false,
@@ -109,8 +123,15 @@ export default async function handler(req, res) {
               playerSlug: player.slug,
               playerImage: player.defaultAssetUrl,
               position: player.positionAbbreviation,
+              stars: currentState.stars,
+              rating: currentState.rating,
+              fromSchool: currentState.fromSchool,
+              fromSchoolLogo: currentState.fromSchoolLogo,
+              toSchool: currentState.toSchool,
+              toSchoolLogo: currentState.toSchoolLogo,
               oldValue: existingData.nilValue,
               newValue: currentState.nilValue,
+              voteScore: voteScore,
               description: `${player.name}'s NIL value ${increased ? 'increased' : 'decreased'} to $${(currentState.nilValue / 1000000).toFixed(2)}M`,
               timestamp: now,
               read: false,
@@ -132,8 +153,16 @@ export default async function handler(req, res) {
               playerSlug: player.slug,
               playerImage: player.defaultAssetUrl,
               position: player.positionAbbreviation,
+              stars: currentState.stars,
+              rating: currentState.rating,
+              fromSchool: currentState.fromSchool,
+              fromSchoolLogo: currentState.fromSchoolLogo,
+              toSchool: currentState.toSchool,
+              toSchoolLogo: currentState.toSchoolLogo,
               oldRank: existingData.nationalRank,
               newRank: currentState.nationalRank,
+              nilValue: currentState.nilValue,
+              voteScore: voteScore,
               description: `${player.name} ${improved ? 'rose' : 'dropped'} to #${currentState.nationalRank} in rankings`,
               timestamp: now,
               read: false,

@@ -7,6 +7,8 @@ export default function FiltersSection({
   onPositionChange,
   statusFilter,
   onStatusChange,
+  yearFilter,
+  onYearChange,
   positions,
   totalCount,
   filteredCount 
@@ -28,6 +30,16 @@ export default function FiltersSection({
       </div>
 
       <div className={styles.filterGroup}>
+        <select
+          value={yearFilter}
+          onChange={(e) => onYearChange(e.target.value)}
+          className={styles.filterSelect}
+        >
+          <option value="2026">2026</option>
+          <option value="2025">2025</option>
+          <option value="2024">2024</option>
+        </select>
+
         <select
           value={positionFilter}
           onChange={(e) => onPositionChange(e.target.value)}

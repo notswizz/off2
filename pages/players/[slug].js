@@ -3,9 +3,9 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState, useEffect, useMemo } from "react";
 import styles from "@/styles/PlayerDetail.module.css";
-import { formatCurrency, formatNumber, formatDate } from "@/utils/formatters";
-import { transformPortalPlayers } from "@/utils/dataTransformers";
+import { formatCurrency, formatDate } from "@/utils/formatters";
 import ThemeToggle from "@/components/ThemeToggle";
+import Comments from "@/components/Comments";
 
 export default function PlayerDetail() {
   const router = useRouter();
@@ -13,6 +13,10 @@ export default function PlayerDetail() {
   
   const [portalData, setPortalData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
+  const [votes, setVotes] = useState({ upvotes: 0, downvotes: 0, score: 0 });
+  const [voting, setVoting] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -35,11 +39,78 @@ export default function PlayerDetail() {
     return portalData.pageProps.players.find((p) => p.slug === slug) || null;
   }, [portalData, slug]);
 
+  // Fetch comment count and votes
+  useEffect(() => {
+    async function fetchCommentCount() {
+      if (!player?.key) return;
+      try {
+        const res = await fetch(`/api/comments?playerId=${player.key}`);
+        if (res.ok) {
+          const data = await res.json();
+          setCommentCount(data.length || 0);
+        }
+      } catch (err) {
+        console.error("Error fetching comments:", err);
+      }
+    }
+    
+    async function fetchVotes() {
+      if (!player?.key) return;
+      try {
+        const res = await fetch(`/api/votes?playerId=${player.key}`);
+        if (res.ok) {
+          const data = await res.json();
+          setVotes(data);
+        }
+      } catch (err) {
+        console.error("Error fetching votes:", err);
+      }
+    }
+    
+    fetchCommentCount();
+    fetchVotes();
+  }, [player?.key]);
+
+  async function handleVote(voteType) {
+    if (!player?.key || voting) return;
+    setVoting(true);
+    try {
+      const res = await fetch('/api/votes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: player.key.toString(), voteType })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setVotes(data);
+      }
+    } catch (err) {
+      console.error("Error voting:", err);
+    } finally {
+      setVoting(false);
+    }
+  }
+
+  // Close modal on escape key
+  useEffect(() => {
+    function handleEscape(e) {
+      if (e.key === 'Escape') setChatOpen(false);
+    }
+    if (chatOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
+  }, [chatOpen]);
+
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.loader}></div>
-        <p>LOADING PLAYER</p>
+        <p>LOADING</p>
       </div>
     );
   }
@@ -60,6 +131,9 @@ export default function PlayerDetail() {
   const lastTeam = player.lastTeam;
   const valuation = player.valuation || {};
 
+  const statusType = player.recStatus === "Enrolled" ? "enrolled" : org ? "committed" : "searching";
+  const statusText = player.recStatus || (org ? "Committed" : "In Portal");
+
   return (
     <>
       <Head>
@@ -69,217 +143,187 @@ export default function PlayerDetail() {
 
       <div className={styles.container}>
         <header className={styles.header}>
-          <Link href="/" className={styles.backLink}>← Rankings</Link>
+          <Link href="/" className={styles.backLink}>← Back</Link>
           <div className={styles.logo}>
             <span className={styles.logoOn3}>Off</span>
             <span className={styles.logoNil}>2</span>
           </div>
-          <ThemeToggle />
+          <div className={styles.headerActions}>
+            <button 
+              className={styles.chatButton}
+              onClick={() => setChatOpen(true)}
+              aria-label="Open chat"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              {commentCount > 0 && (
+                <span className={styles.chatBadge}>{commentCount}</span>
+              )}
+            </button>
+            <ThemeToggle />
+          </div>
         </header>
 
         <main className={styles.main}>
-          {/* Hero */}
-          <section className={styles.hero}>
-            <div className={styles.heroContent}>
-              <div className={styles.playerImageContainer}>
+          {/* Player Card */}
+          <div className={styles.playerCard}>
+
+            {/* Top Section */}
+            <div className={styles.cardTop}>
+              <div className={styles.imageWrapper}>
                 {player.defaultAssetUrl ? (
                   <img src={player.defaultAssetUrl} alt={player.name} className={styles.playerImage} />
                 ) : (
                   <div className={styles.playerImagePlaceholder}>{player.name?.charAt(0)}</div>
                 )}
                 {player.index != null && (
-                  <div className={styles.rankBadge}>#{player.index + 1}</div>
+                  <span className={styles.rankBadge}>#{player.index + 1}</span>
                 )}
               </div>
-              
-              <div className={styles.playerInfo}>
-                <h1 className={styles.playerName}>
-                  {player.name}
-                  {(rating.consensusStars || rating.stars) && (
-                    <span className={styles.stars}>{"★".repeat(rating.consensusStars || rating.stars)}</span>
-                  )}
-                </h1>
+
+              <div className={styles.playerHeader}>
+                <div className={styles.nameRow}>
+                  <h1 className={styles.playerName}>{player.name}</h1>
+                  <span className={`${styles.statusPill} ${styles[statusType]}`}>{statusText}</span>
+                </div>
                 
-                <div className={styles.playerMeta}>
+                <div className={styles.metaRow}>
                   {player.positionAbbreviation && (
-                    <span className={styles.position}>{player.positionAbbreviation}</span>
+                    <span className={styles.positionBadge}>{player.positionAbbreviation}</span>
                   )}
-                  {player.height && <span className={styles.metaItem}>{player.height}</span>}
-                  {player.weight && (
-                    <>
-                      <span className={styles.metaDivider}>•</span>
-                      <span className={styles.metaItem}>{player.weight} lbs</span>
-                    </>
-                  )}
-                  {commitStatus.classRank && (
-                    <>
-                      <span className={styles.metaDivider}>•</span>
-                      <span className={styles.metaItem}>{commitStatus.classRank}</span>
-                    </>
-                  )}
+                  {player.height && <span>{player.height}</span>}
+                  {player.weight && <span>{player.weight} lbs</span>}
+                  {commitStatus.classRank && <span>{commitStatus.classRank}</span>}
                 </div>
 
-                {player.homeTownName && <p className={styles.hometown}>{player.homeTownName}</p>}
+                {player.homeTownName && (
+                  <p className={styles.hometown}>{player.homeTownName}</p>
+                )}
 
                 {/* Transfer Flow */}
                 <div className={styles.transferFlow}>
                   {lastTeam && (
-                    <div className={styles.schoolBadge}>
+                    <div className={styles.schoolChip}>
                       {(lastTeam.assetUrl?.url || lastTeam.asset?.source) && (
                         <img 
                           src={lastTeam.assetUrl?.url || `https://${lastTeam.asset?.domain}${lastTeam.asset?.source}`} 
-                          alt={lastTeam.name} 
+                          alt="" 
                           className={styles.schoolLogo} 
                         />
                       )}
                       <span>{lastTeam.name || lastTeam.fullName}</span>
                     </div>
                   )}
-                  {lastTeam && <span className={styles.transferArrow}>→</span>}
+                  <span className={styles.arrow}>→</span>
                   {org ? (
-                    <div className={styles.schoolBadge}>
-                      {org.assetUrl && <img src={org.assetUrl} alt={org.name} className={styles.schoolLogo} />}
+                    <div className={styles.schoolChip}>
+                      {org.assetUrl && <img src={org.assetUrl} alt="" className={styles.schoolLogo} />}
                       <span>{org.name || org.fullName}</span>
                     </div>
                   ) : (
-                    <span className={styles.inPortalBadge}>In Portal</span>
+                    <span className={styles.portalChip}>In Portal</span>
                   )}
                 </div>
-              </div>
 
-              {/* Rating Display */}
-              <div className={styles.valuationHero}>
-                <div>
-                  <span className={styles.valuationLabel}>Transfer Rating</span>
-                  <div className={styles.valuationAmount}>
-                    {(rating.consensusRating || rating.rating)?.toFixed(1) || "—"}
-                  </div>
+                {/* Subtle Voting */}
+                <div className={styles.voteWidget}>
+                  <button onClick={() => handleVote('up')} disabled={voting} className={styles.voteUp}>
+                    ▲ {votes.upvotes}
+                  </button>
+                  <button onClick={() => handleVote('down')} disabled={voting} className={styles.voteDown}>
+                    ▼ {votes.downvotes}
+                  </button>
                 </div>
-                <span className={`${styles.statusBadge} ${
-                  player.recStatus === "Enrolled" ? styles.enrolled :
-                  org ? styles.committed : styles.searching
-                }`}>
-                  {player.recStatus || (org ? "Committed" : "In Portal")}
-                </span>
-                {commitStatus.transferEntered && (
-                  <span className={styles.lastUpdated}>Entered {formatDate(commitStatus.transferEntered)}</span>
-                )}
               </div>
             </div>
-          </section>
 
-          {/* Stats */}
-          <section className={styles.statsSection}>
-            <h2 className={styles.sectionTitle}>Rankings</h2>
-            <div className={styles.statsGrid}>
-              <div className={styles.statCard}>
-                <span className={styles.statLabel}>National Rank</span>
-                <span className={styles.statValue}>#{rating.consensusNationalRank || rating.nationalRank || "—"}</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statLabel}>Position Rank</span>
-                <span className={styles.statValue}>#{rating.consensusPositionRank || rating.positionRank || "—"}</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statLabel}>Rating</span>
-                <span className={styles.statValue}>{(rating.consensusRating || rating.rating)?.toFixed(1) || "—"}</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statLabel}>Stars</span>
+            {/* Stats Row */}
+            <div className={styles.statsRow}>
+              <div className={styles.statItem}>
                 <span className={styles.statValue}>
-                  {rating.consensusStars || rating.stars || "—"}
-                  <span className={styles.starsSmall}>{"★".repeat(rating.consensusStars || rating.stars || 0)}</span>
+                  {rating.stars || rating.consensusStars || "—"}
+                  {(rating.stars || rating.consensusStars) && <span className={styles.star}>★</span>}
                 </span>
+                <span className={styles.statLabel}>Stars</span>
+              </div>
+              <div className={styles.statDivider} />
+              <div className={styles.statItem}>
+                <span className={styles.statValue}>{(rating.rating || rating.consensusRating)?.toFixed(1) || "—"}</span>
+                <span className={styles.statLabel}>Rating</span>
+              </div>
+              <div className={styles.statDivider} />
+              <div className={styles.statItem}>
+                <span className={styles.statValue}>#{rating.nationalRank || rating.consensusNationalRank || "—"}</span>
+                <span className={styles.statLabel}>National</span>
+              </div>
+              <div className={styles.statDivider} />
+              <div className={styles.statItem}>
+                <span className={styles.statValue}>#{rating.positionRank || rating.consensusPositionRank || "—"}</span>
+                <span className={styles.statLabel}>{rating.positionAbbr || player.positionAbbreviation || "Pos"}</span>
               </div>
             </div>
-          </section>
 
-          {/* Industry Comparison */}
-          {(() => {
-            const industryRatings = player.industryComparison?.filter(
-              comp => comp.type !== "Industry" && comp.type !== "Consensus" && (comp.rating || comp.stars || comp.overallRank)
-            ) || [];
-            
-            if (industryRatings.length === 0) return null;
-            
-            return (
-              <section className={styles.socialSection}>
-                <h2 className={styles.sectionTitle}>Industry Ratings</h2>
-                <div className={styles.socialGrid}>
-                  {industryRatings.map((comp) => (
-                    <div key={comp.type} className={styles.socialCard}>
-                      <div className={styles.socialHeader}>
-                        <span className={styles.socialType}>{comp.type}</span>
-                      </div>
-                      <div className={styles.socialStats}>
-                        {comp.rating && (
-                          <div className={styles.socialStat}>
-                            <span className={styles.socialStatValue}>{comp.rating.toFixed(1)}</span>
-                            <span className={styles.socialStatLabel}>Rating</span>
-                          </div>
-                        )}
-                        {comp.stars && (
-                          <div className={styles.socialStat}>
-                            <span className={styles.socialStatValue}>{comp.stars}★</span>
-                            <span className={styles.socialStatLabel}>Stars</span>
-                          </div>
-                        )}
-                        {comp.overallRank && (
-                          <div className={styles.socialStat}>
-                            <span className={styles.socialStatValue}>#{comp.overallRank}</span>
-                            <span className={styles.socialStatLabel}>Rank</span>
-                          </div>
-                        )}
-                      </div>
-                      {comp.link && (
-                        <a href={comp.link} target="_blank" rel="noopener noreferrer" className={styles.socialLink}>
-                          View Profile →
-                        </a>
-                      )}
+            {/* Details Grid */}
+            <div className={styles.detailsGrid}>
+              {player.highSchool && (
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>High School</span>
+                  <span className={styles.detailValue}>{player.highSchool.name || player.highSchool.fullName}</span>
+                </div>
+              )}
+              {player.classYear && (
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>Class</span>
+                  <span className={styles.detailValue}>{player.classYear}</span>
+                </div>
+              )}
+              {commitStatus.transferEntered && (
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>Entered Portal</span>
+                  <span className={styles.detailValue}>{formatDate(commitStatus.transferEntered)}</span>
+                </div>
+              )}
+              {commitStatus.date && org && (
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>Committed</span>
+                  <span className={styles.detailValue}>{formatDate(commitStatus.date)}</span>
+                </div>
+              )}
+              {valuation.totalValue && (
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>NIL Value</span>
+                  <span className={styles.detailValueHighlight}>{formatCurrency(valuation.totalValue)}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Predictions - only show if still in portal */}
+            {!org && player.predictions && player.predictions.length > 0 && (
+              <div className={styles.predictionsSection}>
+                <span className={styles.predictionsTitle}>Predictions</span>
+                <div className={styles.predictionsList}>
+                  {player.predictions.slice(0, 5).map((pred, idx) => (
+                    <div key={idx} className={styles.predictionItem}>
+                      {pred.organization?.name || pred.organization?.fullName || pred.organization?.abbreviation}
                     </div>
                   ))}
                 </div>
-              </section>
-            );
-          })()}
-
-          {/* High School */}
-          {player.highSchool && (
-            <section className={styles.highSchoolSection}>
-              <h2 className={styles.sectionTitle}>High School</h2>
-              <div className={styles.highSchoolCard}>
-                {(player.highSchool.assetUrl || player.highSchool.defaultAsset?.source) && (
-                  <img 
-                    src={player.highSchool.assetUrl || `https://${player.highSchool.defaultAsset?.domain}${player.highSchool.defaultAsset?.source}`} 
-                    alt={player.highSchool.name} 
-                    className={styles.hsLogo} 
-                  />
-                )}
-                <div className={styles.hsInfo}>
-                  <h3>{player.highSchool.name || player.highSchool.fullName}</h3>
-                  {player.highSchool.mascot && <p className={styles.hsMascot}>{player.highSchool.mascot}</p>}
-                </div>
               </div>
-            </section>
-          )}
+            )}
 
-          {/* Articles */}
-          {(player.committedArticle || player.enteredArticle) && (
-            <section className={styles.articlesSection}>
-              <h2 className={styles.sectionTitle}>Related News</h2>
-              <div className={styles.articlesGrid}>
+            {/* Articles */}
+            {(player.committedArticle || player.enteredArticle) && (
+              <div className={styles.articlesRow}>
                 {player.committedArticle && (
                   <a 
                     href={`https://www.on3.com${player.committedArticle.fullUrl}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={styles.articleCard}
+                    className={styles.articleLink}
                   >
-                    <span className={styles.articleBadge}>Committed</span>
-                    <h3>{player.committedArticle.title}</h3>
-                    <span className={styles.articleDate}>
-                      {formatDate(player.committedArticle.datePublishedGmt)}
-                    </span>
+                    <span className={styles.articleIcon}>📰</span>
+                    <span>{player.committedArticle.title}</span>
                   </a>
                 )}
                 {player.enteredArticle && (
@@ -287,65 +331,46 @@ export default function PlayerDetail() {
                     href={`https://www.on3.com${player.enteredArticle.fullUrl}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={styles.articleCard}
+                    className={styles.articleLink}
                   >
-                    <span className={styles.articleBadge}>Entered Portal</span>
-                    <h3>{player.enteredArticle.title}</h3>
-                    <span className={styles.articleDate}>
-                      {formatDate(player.enteredArticle.datePublishedGmt)}
-                    </span>
+                    <span className={styles.articleIcon}>📰</span>
+                    <span>{player.enteredArticle.title}</span>
                   </a>
                 )}
               </div>
-            </section>
-          )}
+            )}
 
-          {/* Info Pills */}
-          <section className={styles.additionalSection}>
-            <h2 className={styles.sectionTitle}>Details</h2>
-            <div className={styles.infoGrid}>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Sport</span>
-                <span className={styles.infoValue}>Football</span>
-              </div>
-              {commitStatus.classRank && (
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>Class Standing</span>
-                  <span className={styles.infoValue}>{commitStatus.classRank}</span>
-                </div>
-              )}
-              {player.nilStatus && (
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>NIL Status</span>
-                  <span className={styles.infoValue}>{player.nilStatus}</span>
-                </div>
-              )}
-              {valuation.totalValue && (
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>NIL Value</span>
-                  <span className={styles.infoValue}>{formatCurrency(valuation.totalValue)}</span>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* External Link */}
-          <section className={styles.externalSection}>
+            {/* View on On3 */}
             <a
               href={`https://www.on3.com/db/${player.slug}/`}
               target="_blank"
               rel="noopener noreferrer"
-              className={styles.externalLink}
+              className={styles.on3Link}
             >
-              View Full Profile on On3 →
+              View on On3.com →
             </a>
-          </section>
+          </div>
         </main>
-
-        <footer className={styles.footer}>
-          <p>Data from <a href="https://www.on3.com" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>On3.com</a></p>
-        </footer>
       </div>
+
+      {/* Chat Modal */}
+      {chatOpen && (
+        <div className={styles.modalOverlay} onClick={() => setChatOpen(false)}>
+          <div 
+            className={styles.modalContent} 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              className={styles.modalClose}
+              onClick={() => setChatOpen(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <Comments playerId={player.key?.toString()} playerName={player.name} />
+          </div>
+        </div>
+      )}
     </>
   );
 }

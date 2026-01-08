@@ -22,11 +22,13 @@ const PLAYERS_PER_PAGE = 25;
 export default function Home() {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState("2026");
 
   useEffect(() => {
     async function fetchData() {
+      setLoading(true);
       try {
-        const res = await fetch("/api/transfer-portal?sport=football&year=2026");
+        const res = await fetch(`/api/transfer-portal?sport=football&year=${selectedYear}`);
         if (res.ok) {
           const data = await res.json();
           setPlayers(transformPortalPlayers(data));
@@ -38,7 +40,7 @@ export default function Home() {
       }
     }
     fetchData();
-  }, []);
+  }, [selectedYear]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [positionFilter, setPositionFilter] = useState("all");
@@ -110,7 +112,7 @@ export default function Home() {
           <header className={styles.header}>
             <div className={styles.headerTop}>
               <div className={styles.titleGroup}>
-                <span className={styles.badge}>Live Rankings</span>
+                <span className={styles.badge}>Transfer Portal</span>
                 <h1 className={styles.title}>
                   Off<span className={styles.titleAccent}>2</span>
                 </h1>
@@ -138,6 +140,8 @@ export default function Home() {
             onPositionChange={handlePositionChange}
             statusFilter={statusFilter}
             onStatusChange={handleStatusChange}
+            yearFilter={selectedYear}
+            onYearChange={(year) => { setSelectedYear(year); setCurrentPage(1); }}
             positions={positions}
             totalCount={paginatedPlayers.length}
             filteredCount={filteredPlayers.length}

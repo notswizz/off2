@@ -47,8 +47,9 @@ export function transformPortalPlayers(portalData) {
       portalRank: player.index != null ? player.index + 1 : (idx + 1),
       
       // NIL valuation
-      nilStatus: player.nilStatus,
+      nilStatus: player.nilStatus || valuation.nilStatus,
       nilValuation: valuation.totalValue || valuation.valuation || null,
+      nilSource: valuation.totalValue ? 'valuation' : valuation.valuation ? 'nil' : null,
       valuation: valuation,
       
       // Player record status

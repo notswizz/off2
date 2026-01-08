@@ -111,6 +111,37 @@
   color: var(--accent);
 }
 
+/* Year Tabs */
+.yearTabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.yearTab {
+  padding: 0.625rem 1.5rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.yearTab:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.yearTab.activeYear {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-primary);
+}
+
 /* Notification Button */
 .notificationBtn {
   display: flex;
@@ -246,7 +277,7 @@
 }
 
 .table thead {
-  background: rgba(0, 0, 0, 0.3);
+  background: transparent;
   border-bottom: 1px solid var(--border);
 }
 
@@ -479,6 +510,12 @@
   justify-content: center;
   color: var(--text-muted);
   opacity: 0.4;
+  cursor: help;
+}
+
+.nilNA {
+  color: var(--text-muted);
+  opacity: 0.3;
 }
 
 /* Status Badge */
@@ -627,21 +664,74 @@
   }
   
   .filtersSection {
-    flex-direction: column;
-    align-items: stretch;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+  
+  .searchBox {
+    min-width: 200px;
+    flex: 1;
+  }
+  
+  .filterGroup {
+    gap: 0.5rem;
+  }
+  
+  .searchInput {
+    padding: 0.625rem 0.75rem 0.625rem 2.25rem;
+    font-size: 0.8125rem;
+  }
+  
+  .searchIcon {
+    left: 0.625rem;
+    width: 16px;
+    height: 16px;
+  }
+  
+  .filterSelect {
+    padding: 0.625rem 1.75rem 0.625rem 0.75rem;
+    font-size: 0.8125rem;
+    min-width: auto;
+  }
+  
+  .resultsCount {
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .filtersSection {
+    gap: 0.5rem;
+    padding: 0.75rem;
   }
   
   .searchBox {
     min-width: 100%;
+    order: -1;
   }
   
   .filterGroup {
-    flex-wrap: wrap;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.375rem;
+    width: 100%;
+  }
+  
+  .filterSelect {
+    flex: 1;
+    padding: 0.5rem 1.5rem 0.5rem 0.5rem;
+    font-size: 0.75rem;
+    background-position: right 0.375rem center;
   }
   
   .resultsCount {
-    margin-left: 0;
+    order: 1;
+    width: 100%;
     text-align: center;
+    padding-top: 0.25rem;
+    font-size: 0.6875rem;
+    color: var(--text-muted);
   }
 }
 
