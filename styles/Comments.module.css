@@ -16,6 +16,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
+  padding-left: 3.5rem; /* Space for close button */
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
 }
@@ -530,6 +531,32 @@
 /* Responsive */
 @media (max-width: 480px) {
   .chatContainer {
-    max-height: 60vh;
+    max-height: none;
+    height: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+  
+  .chatHeader {
+    padding-left: 3rem;
+  }
+  
+  .messagesArea {
+    flex: 1;
+    min-height: 0;
+  }
+  
+  .inputArea {
+    padding: 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+  }
+  
+  .chatInput {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .setupSection {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   }
 }

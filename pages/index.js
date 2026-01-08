@@ -127,10 +127,23 @@ export default function Home() {
         <main className={styles.main}>
           {/* Header */}
           <header className={styles.header}>
-            <div className={styles.logoWrapper}>
+            <button 
+              className={styles.logoWrapper}
+              onClick={() => {
+                // Only toggle theme on mobile (< 481px)
+                if (window.innerWidth <= 480) {
+                  const html = document.documentElement;
+                  const current = html.getAttribute('data-theme');
+                  const next = current === 'light' ? 'dark' : 'light';
+                  html.setAttribute('data-theme', next);
+                  localStorage.setItem('theme', next);
+                }
+              }}
+              aria-label="Toggle theme"
+            >
               <img src="/off21.jpg" alt="Off2" className={`${styles.logo} ${styles.logoDark}`} />
               <img src="/off2.jpg" alt="Off2" className={`${styles.logo} ${styles.logoLight}`} />
-            </div>
+            </button>
 
             {/* Ticker */}
             <div className={styles.ticker}>
@@ -181,7 +194,9 @@ export default function Home() {
                   <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                 </svg>
               </button>
-              <ThemeToggle />
+              <div className={styles.themeToggleWrapper}>
+                <ThemeToggle />
+              </div>
             </div>
           </header>
 

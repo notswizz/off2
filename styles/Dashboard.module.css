@@ -111,6 +111,9 @@
   background-size: 300% 300%;
   animation: borderGlow 4s ease infinite;
   border-radius: 8px;
+  border: none;
+  cursor: default;
+  flex-shrink: 0;
 }
 
 @keyframes borderGlow {
@@ -161,6 +164,10 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.themeToggleWrapper {
+  display: flex;
 }
 
 .headerTop {
@@ -810,6 +817,49 @@
 }
 
 @media (max-width: 480px) {
+  .header {
+    gap: 0.5rem;
+  }
+  
+  .logoWrapper {
+    padding: 1px;
+  }
+  
+  .logo {
+    height: 32px;
+  }
+  
+  .logoWrapper {
+    cursor: pointer;
+  }
+  
+  .logoWrapper:hover {
+    transform: scale(1.02);
+  }
+  
+  .logoWrapper:active {
+    transform: scale(0.98);
+  }
+  
+  .ticker {
+    margin: 0 0.5rem;
+    height: 32px;
+  }
+  
+  .tickerItem {
+    padding: 0 1rem;
+    font-size: 0.6875rem;
+  }
+  
+  .themeToggleWrapper {
+    display: none;
+  }
+  
+  .notificationBtn {
+    width: 32px;
+    height: 32px;
+  }
+  
   .filtersSection {
     gap: 0.5rem;
     padding: 0.75rem;
