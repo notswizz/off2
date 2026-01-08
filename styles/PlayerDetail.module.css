@@ -119,7 +119,7 @@
   display: none;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 1024px) {
   .header {
     display: none;
   }
@@ -225,7 +225,7 @@
   
   /* Hide desktop vote widget on mobile */
   .desktopVoteWidget {
-    display: none;
+    display: none !important;
   }
   
   /* Floating Vote Widget - Top Left (Vertical Stack) */
