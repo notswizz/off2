@@ -1,0 +1,60 @@
+.toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+}
+
+.track {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  border-radius: 100px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+
+.track.dark {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.track.light {
+  background: linear-gradient(135deg, #87ceeb 0%, #ffd89b 100%);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.thumb {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.track.dark .thumb {
+  left: 3px;
+  background: #2d2d44;
+  color: #ffd700;
+}
+
+.track.light .thumb {
+  left: calc(100% - 25px);
+  background: #fff;
+  color: #f59e0b;
+}
+
+.toggle:hover .track {
+  transform: scale(1.05);
+}
+
+.toggle:active .track {
+  transform: scale(0.95);
+}
+
